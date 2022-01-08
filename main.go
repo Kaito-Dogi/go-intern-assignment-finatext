@@ -77,6 +77,7 @@ func addressHandler(writer http.ResponseWriter, request *http.Request) {
 		log.Fatal(err)
 	}
 
+	writer.Header().Set("Content-Type", "application/json")
 	fmt.Fprintln(writer, buf.String())
 
 }
