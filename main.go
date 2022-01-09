@@ -53,31 +53,41 @@ func addressHandler(writer http.ResponseWriter, request *http.Request) {
 		log.Fatal("Get Http Error: ", err)
 	}
 
+	// responseのbodyを読み込む．
 	body, err := io.ReadAll(xmlResponse.Body)
 	if err != nil {
 		log.Fatal("IO Read Error: ", err)
 	}
 
+	// responseのリソースを解放する（調べる）．
 	defer xmlResponse.Body.Close()
 
+	// xmlを構造体にする．
 	addressXml := new(AddressXml)
 	if err := xml.Unmarshal([]byte(body), addressXml); err != nil {
 		log.Fatal("XML Unmarshal Error: ", err)
 	}
 
+	// jsonの構造体を生成する．
 	addressJson := AddressJson{
 		PostalCode:  addressXml.Result.ResultZipNum,
 		Address:     addressXml.AddressValue.Value.State + addressXml.AddressValue.Value.City + addressXml.AddressValue.Value.Address,
 		AddressKana: addressXml.AddressValue.Value.StateKana + addressXml.AddressValue.Value.CityKana + addressXml.AddressValue.Value.AddressKana,
 	}
 
+	// 構造体をjsonに変換する．
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	if err := enc.Encode(&addressJson); err != nil {
 		log.Fatal(err)
 	}
 
+	// responseを出力する．
 	writer.Header().Set("Content-Type", "application/json")
 	fmt.Fprintln(writer, buf.String())
+
+}
+
+func getAddress(url string) {
 
 }
