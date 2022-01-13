@@ -63,4 +63,4 @@
   - その他は[Error handling and Go](https://go.dev/blog/error-handling-and-go)を参考にした．
 
 ## 感想
-意外と
+意外にも手軽にローカルサーバを立てられることに感動しました．また，
