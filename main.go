@@ -1,6 +1,7 @@
 package main
 
 import (
+	"TaskFinatext/types"
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
@@ -9,28 +10,6 @@ import (
 	"log"
 	"net/http"
 )
-
-type AddressXml struct {
-	Result struct {
-		ResultZipNum string `xml:"result_zip_num,attr"`
-	} `xml:"result"`
-	AddressValue struct {
-		Value struct {
-			State       string `xml:"state,attr"`
-			City        string `xml:"city,attr"`
-			Address     string `xml:"address,attr"`
-			StateKana   string `xml:"state_kana,attr"`
-			CityKana    string `xml:"city_kana,attr"`
-			AddressKana string `xml:"address_kana,attr"`
-		} `xml:"value"`
-	} `xml:"ADDRESS_value"`
-}
-
-type AddressJson struct {
-	PostalCode  string `json:"postal_code"`
-	Address     string `json:"address"`
-	AddressKana string `json:"address_kana"`
-}
 
 func main() {
 	http.HandleFunc("/", homeHandler)
@@ -63,16 +42,16 @@ func addressHandler(writer http.ResponseWriter, request *http.Request) {
 	defer xmlResponse.Body.Close()
 
 	// xmlを構造体にする．
-	addressXml := new(AddressXml)
+	addressXml := new(types.AddressXMl)
 	if err := xml.Unmarshal([]byte(body), addressXml); err != nil {
 		log.Fatal("XML Unmarshal Error: ", err)
 	}
 
 	// jsonの構造体を生成する．
-	addressJson := AddressJson{
+	addressJson := types.AddressJSON{
 		PostalCode:  addressXml.Result.ResultZipNum,
-		Address:     addressXml.AddressValue.Value.State + addressXml.AddressValue.Value.City + addressXml.AddressValue.Value.Address,
-		AddressKana: addressXml.AddressValue.Value.StateKana + addressXml.AddressValue.Value.CityKana + addressXml.AddressValue.Value.AddressKana,
+		Address:     addressXml.ADDRESSValue.Value.State + addressXml.ADDRESSValue.Value.City + addressXml.ADDRESSValue.Value.Address,
+		AddressKana: addressXml.ADDRESSValue.Value.StateKana + addressXml.ADDRESSValue.Value.CityKana + addressXml.ADDRESSValue.Value.AddressKana,
 	}
 
 	// 構造体をjsonに変換する．
