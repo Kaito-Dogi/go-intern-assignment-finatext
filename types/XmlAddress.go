@@ -1,6 +1,6 @@
 package types
 
-type AddressXMl struct {
+type XmlAddress struct {
 	Result struct {
 		ResultZipNum string `xml:"result_zip_num,attr"`
 	} `xml:"result"`

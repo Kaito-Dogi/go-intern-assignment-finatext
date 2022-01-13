@@ -26,47 +26,58 @@ func addressHandler(writer http.ResponseWriter, request *http.Request) {
 	//クエリパラメータ取得する．
 	zn := request.URL.Query().Get("postal_code")
 
-	// 外部APIを叩く．
-	xmlResponse, err := http.Get("http://zip.cgis.biz/xml/zip.php?zn=" + zn)
-	if err != nil {
-		log.Fatal("Get Http Error: ", err)
-	}
+	// URLを作成する．
+	url := "http://zip.cgis.biz/xml/zip.php?zn=" + zn
 
-	// responseのbodyを読み込む．
-	body, err := io.ReadAll(xmlResponse.Body)
-	if err != nil {
-		log.Fatal("IO Read Error: ", err)
-	}
+	// XML形式のレスポンスを受け取る．
+	xmlResponse := getAddress(url)
 
-	// responseのリソースを解放する（調べる）．
-	defer xmlResponse.Body.Close()
-
-	// xmlを構造体にする．
-	addressXml := new(types.AddressXMl)
-	if err := xml.Unmarshal([]byte(body), addressXml); err != nil {
-		log.Fatal("XML Unmarshal Error: ", err)
-	}
-
-	// jsonの構造体を生成する．
-	addressJson := types.AddressJSON{
-		PostalCode:  addressXml.Result.ResultZipNum,
-		Address:     addressXml.ADDRESSValue.Value.State + addressXml.ADDRESSValue.Value.City + addressXml.ADDRESSValue.Value.Address,
-		AddressKana: addressXml.ADDRESSValue.Value.StateKana + addressXml.ADDRESSValue.Value.CityKana + addressXml.ADDRESSValue.Value.AddressKana,
-	}
-
-	// 構造体をjsonに変換する．
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	if err := enc.Encode(&addressJson); err != nil {
+	// XML形式のレスポンスをXMLの構造体に変換する．
+	xmlAddress := new(types.XmlAddress)
+	if err := xml.Unmarshal(xmlResponse, xmlAddress); err != nil {
 		log.Fatal(err)
 	}
 
-	// responseを出力する．
-	writer.Header().Set("Content-Type", "application/json")
-	fmt.Fprintln(writer, buf.String())
+	// XMLの構造体のフィールドを元に，JSONの構造体を生成する．
+	jsonAddress := types.JsonAddress{
+		PostalCode:  xmlAddress.Result.ResultZipNum,
+		Address:     xmlAddress.ADDRESSValue.Value.State + xmlAddress.ADDRESSValue.Value.City + xmlAddress.ADDRESSValue.Value.Address,
+		AddressKana: xmlAddress.ADDRESSValue.Value.StateKana + xmlAddress.ADDRESSValue.Value.CityKana + xmlAddress.ADDRESSValue.Value.AddressKana,
+	}
 
+	// JSONの構造体をJSON形式に変換する．
+	var jsonResponse bytes.Buffer
+	enc := json.NewEncoder(&jsonResponse)
+	if err := enc.Encode(&jsonAddress); err != nil {
+		log.Fatal(err)
+	}
+
+	// JSON形式のResponseを出力する．
+	writer.Header().Set("Content-Type", "application/json")
+	fmt.Fprintln(writer, jsonResponse.String())
 }
 
-func getAddress(url string) {
+// 引数にURLを受け取り，XML形式のレスポンスを返す．
+func getAddress(url string) []byte {
+	// URLを受け取り，外部APIを叩く．
+	xmlResponse, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	// ResponseのBodyを読み込む．
+	body, err := io.ReadAll(xmlResponse.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// ResponseのBodyを閉じる．
+	defer func(Body io.ReadCloser) {
+		if err := Body.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}(xmlResponse.Body)
+
+	// Bodyを返す．
+	return body
 }
