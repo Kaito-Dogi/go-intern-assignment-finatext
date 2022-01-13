@@ -12,14 +12,17 @@ import (
 )
 
 func main() {
+	// URLと処理を紐付ける．
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/address", addressHandler)
+
+	// ポート番号を8080としてAPIサーバを立ち上げる．
 	fmt.Println("Server is running...")
 	http.ListenAndServe(":8080", nil)
 }
 
 func homeHandler(writer http.ResponseWriter, request *http.Request) {
-	fmt.Fprintln(writer, "<h1>I'm Kaito-Dogi!</h1>")
+	fmt.Fprintln(writer, "<small>&copy; 2022 Kaito-Dogi</small>")
 }
 
 func addressHandler(writer http.ResponseWriter, request *http.Request) {
