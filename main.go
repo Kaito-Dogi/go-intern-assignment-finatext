@@ -18,16 +18,18 @@ func main() {
 
 	// ポート番号を8080としてAPIサーバを立ち上げる．
 	fmt.Println("Server is running...")
-	http.ListenAndServe(":8080", nil)
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatal(err)
+	}
 }
 
-func homeHandler(writer http.ResponseWriter, request *http.Request) {
-	fmt.Fprintln(writer, "<small>&copy; 2022 Kaito-Dogi</small>")
+func homeHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "<small>&copy; 2022 Kaito-Dogi</small>")
 }
 
-func addressHandler(writer http.ResponseWriter, request *http.Request) {
+func addressHandler(w http.ResponseWriter, r *http.Request) {
 	//クエリパラメータ取得する．
-	zn := request.URL.Query().Get("postal_code")
+	zn := r.URL.Query().Get("postal_code")
 
 	// URLを作成する．
 	url := "http://zip.cgis.biz/xml/zip.php?zn=" + zn
@@ -39,6 +41,12 @@ func addressHandler(writer http.ResponseWriter, request *http.Request) {
 	xmlAddress := new(types.XmlAddress)
 	if err := xml.Unmarshal(xmlResponse, xmlAddress); err != nil {
 		log.Fatal(err)
+	}
+
+	// 無効な郵便番号だった場合，ステータスコード400を返す．
+	if xmlAddress.Result.ResultZipNum == "" {
+		http.Error(w, "400 Bad Request", 400)
+		return
 	}
 
 	// XMLの構造体のフィールドを元に，JSONの構造体を生成する．
@@ -55,9 +63,9 @@ func addressHandler(writer http.ResponseWriter, request *http.Request) {
 		log.Fatal(err)
 	}
 
-	// JSON形式のResponseを出力する．
-	writer.Header().Set("Content-Type", "application/json")
-	fmt.Fprintln(writer, jsonResponse.String())
+	// JSON形式のResponseを返す．
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintln(w, jsonResponse.String())
 }
 
 // 引数にURLを受け取り，XML形式のレスポンスを返す．
